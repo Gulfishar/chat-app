@@ -1,0 +1,24 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches:
+      - main  # Change if you're using another branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Install Dependencies
+        run: |
+          cd backend
+          npm install
+
+      - name: Deploy to Server
+        run: |
+          echo "Deployment steps go here..."
+          # Add deployment commands for your server (AWS, DigitalOcean, or other)
