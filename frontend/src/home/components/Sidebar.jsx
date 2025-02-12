@@ -13,15 +13,16 @@ const Sidebar = ({ onSelectUser }) => {
   const navigate = useNavigate();
   const { authUser, setAuthUser } = useAuth();
   const [searchInput, setSearchInput] = useState("");
-  const [searchUser, setSearchuser] = useState([]);
+  const [searchUser, setSearchUser] = useState([]);
   const [chatUser, setChatUser] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [newMessageUsers, setNewMessageUsers] = useState("");
-  const { messages, setMessage, selectedConversation, setSelectedConversation } = userConversation();
+  const { messages, setSelectedConversation } = userConversation();
   const { onlineUser, socket } = useSocketContext();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Sidebar toggle for mobile
 
+  // Listen for new messages
   useEffect(() => {
     socket?.on("newMessage", (newMessage) => {
       setNewMessageUsers(newMessage);
@@ -29,68 +30,70 @@ const Sidebar = ({ onSelectUser }) => {
     return () => socket?.off("newMessage");
   }, [socket, messages]);
 
+  // Fetch chat users
   useEffect(() => {
-    const chatUserHandler = async () => {
+    const fetchChatUsers = async () => {
       setLoading(true);
       try {
-        const chatters = await axios.get(`/api/user/currentchatters`);
-        setLoading(false);
-        setChatUser(chatters.data);
+        const response = await axios.get(`/api/user/currentchatters`);
+        setChatUser(response.data);
       } catch (error) {
+        console.error("Error fetching chat users:", error);
+      } finally {
         setLoading(false);
-        console.error(error);
       }
     };
-    chatUserHandler();
+    fetchChatUsers();
   }, []);
 
-  const handelSearchSubmit = async (e) => {
+  // Search users
+  const handleSearchSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const search = await axios.get(`/api/user/search?search=${searchInput}`);
-      setLoading(false);
-      if (search.data.length === 0) {
-        toast.info("User Not Found");
-      } else {
-        setSearchuser(search.data);
-      }
+      const response = await axios.get(`/api/user/search?search=${searchInput}`);
+      setSearchUser(response.data.length > 0 ? response.data : []);
+      if (response.data.length === 0) toast.info("User Not Found");
     } catch (error) {
+      console.error("Search error:", error);
+    } finally {
       setLoading(false);
-      console.error(error);
     }
   };
 
-  const handelUserClick = (user) => {
+  // Select a user to chat
+  const handleUserClick = (user) => {
     onSelectUser(user);
     setSelectedConversation(user);
     setSelectedUserId(user._id);
     setNewMessageUsers("");
-    setIsSidebarOpen(false); // Hide sidebar when a user is selected (on mobile)
+    setIsSidebarOpen(false); // Hide sidebar on mobile
   };
 
-  const handSearchback = () => {
-    setSearchuser([]);
+  // Clear search results
+  const handleSearchBack = () => {
+    setSearchUser([]);
     setSearchInput("");
   };
 
-  const handelLogOut = async () => {
-    const confirmlogout = window.prompt("Type 'UserName' To LOGOUT");
-    if (confirmlogout === authUser.username) {
+  // Logout function
+  const handleLogout = async () => {
+    const confirmLogout = window.prompt("Type 'UserName' To LOGOUT");
+    if (confirmLogout === authUser.username) {
       setLoading(true);
       try {
         await axios.post("/api/auth/logout");
         toast.info("Logged out successfully");
         localStorage.removeItem("chatapp");
         setAuthUser(null);
-        setLoading(false);
         navigate("/login");
       } catch (error) {
+        console.error("Logout error:", error);
+      } finally {
         setLoading(false);
-        console.error(error);
       }
     } else {
-      toast.info("LogOut Cancelled");
+      toast.info("Logout Cancelled");
     }
   };
 
@@ -104,14 +107,14 @@ const Sidebar = ({ onSelectUser }) => {
         <FaBars />
       </button>
 
-      {/* Sidebar (Hidden on mobile, visible on desktop) */}
+      {/* Sidebar */}
       <div
         className={`fixed sm:relative bg-gray-400 text-black transition-transform duration-300 
                     ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"} sm:translate-x-0 flex-shrink-0 w-[250px] sm:w-[300px] h-full border-r`}
       >
         {/* Search Bar */}
         <div className="p-4 flex items-center gap-2 bg-gray-500">
-          <form onSubmit={handelSearchSubmit} className="flex items-center bg-white rounded-full w-full sm:w-auto px-3 py-1">
+          <form onSubmit={handleSearchSubmit} className="flex items-center bg-white rounded-full w-full sm:w-auto px-3 py-1">
             <FaSearch className="text-gray-500" />
             <input
               value={searchInput}
@@ -131,13 +134,19 @@ const Sidebar = ({ onSelectUser }) => {
               <h1>Search username to chat</h1>
             </div>
           ) : (
-            chatUser.map((user, index) => (
-              <div key={user._id} onClick={() => handelUserClick(user)}
+            chatUser.map((user) => (
+              <div key={user._id} onClick={() => handleUserClick(user)}
                    className={`flex gap-3 items-center rounded p-2 py-1 cursor-pointer hover:bg-gray-300 
                    ${selectedUserId === user?._id ? "bg-sky-500 text-white" : ""}`}>
                 <div className={`avatar ${onlineUser.includes(user._id) ? "online" : ""}`}>
-                  <div className="w-12 rounded-full">
-                    <img src={user.profilepic} alt="user.img" />
+                  <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200">
+                    {user.profilepic ? (
+                      <img src={user.profilepic} alt="User Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="flex items-center justify-center w-full h-full text-gray-600 text-sm">
+                        No Image
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="flex flex-col flex-1">
@@ -155,7 +164,7 @@ const Sidebar = ({ onSelectUser }) => {
             className="h-10 w-10 sm:h-12 sm:w-12 rounded-full cursor-pointer hover:scale-110"
             alt="Profile"
           />
-          <button onClick={handelLogOut} className="hover:bg-red-600 w-10 sm:w-auto px-3 py-2 flex items-center gap-2 rounded-lg transition-all">
+          <button onClick={handleLogout} className="hover:bg-red-600 w-10 sm:w-auto px-3 py-2 flex items-center gap-2 rounded-lg transition-all">
             <BiLogOut size={25} />
             <span className="hidden sm:inline">Logout</span>
           </button>
