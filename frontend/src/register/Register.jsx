@@ -63,14 +63,14 @@ const Register = () => {
 
                 <form onSubmit={handelSubmit} className="flex flex-col text-black">
                     <div>
-                        <label className="font-semibold text-gray-700 text-lg">Full Name:</label>
+                        <label className="font-semibold text-white-700 text-lg">Full Name:</label>
                         <input
                             id="fullname"
                             type="text"
                             onChange={handelInput}
                             placeholder="Enter Full Name"
                             required
-                            className="w-full input input-bordered h-11 rounded-lg px-3 mt-1"
+                            className="w-full input input-bordered h-11 rounded-lg px-3 mt-1 text-white"
                         />
                     </div>
 
