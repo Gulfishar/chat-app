@@ -82,7 +82,7 @@ const Register = () => {
                             onChange={handelInput}
                             placeholder="Enter Username"
                             required
-                            className="w-full input input-bordered h-11 rounded-lg px-3 mt-1"
+                            className="w-full input input-bordered h-11 rounded-lg px-3 mt-1 text-white"
                         />
                     </div>
 
@@ -94,7 +94,7 @@ const Register = () => {
                             onChange={handelInput}
                             placeholder="Enter Email"
                             required
-                            className="w-full input input-bordered h-11 rounded-lg px-3 mt-1"
+                            className="w-full input input-bordered h-11 rounded-lg px-3 mt-1 text-white"
                         />
                     </div>
 
@@ -106,7 +106,7 @@ const Register = () => {
                             onChange={handelInput}
                             placeholder="Enter Password"
                             required
-                            className="w-full input input-bordered h-11 rounded-lg px-3 mt-1"
+                            className="w-full input input-bordered h-11 rounded-lg px-3 mt-1 text-white"
                         />
                     </div>
 
@@ -118,7 +118,7 @@ const Register = () => {
                             onChange={handelInput}
                             placeholder="Confirm Password"
                             required
-                            className="w-full input input-bordered h-11 rounded-lg px-3 mt-1"
+                            className="w-full input input-bordered h-11 rounded-lg px-3 mt-1 text-white"
                         />
                     </div>
 
