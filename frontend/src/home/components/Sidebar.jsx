@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { FaSearch, FaBars } from "react-icons/fa";
-import { IoArrowBackSharp } from "react-icons/io5";
 import { BiLogOut } from "react-icons/bi";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -13,67 +12,55 @@ const Sidebar = ({ onSelectUser }) => {
   const navigate = useNavigate();
   const { authUser, setAuthUser } = useAuth();
   const [searchInput, setSearchInput] = useState("");
-  const [searchUser, setSearchUser] = useState([]);
-  const [chatUser, setChatUser] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState(null);
-  const [newMessageUsers, setNewMessageUsers] = useState("");
-  const { messages, setSelectedConversation } = userConversation();
-  const { onlineUser, socket } = useSocketContext();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Sidebar toggle for mobile
+  const { setSelectedConversation } = userConversation();
+  const { onlineUser } = useSocketContext();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  // Listen for new messages
+  // Fetch all users on mount
   useEffect(() => {
-    socket?.on("newMessage", (newMessage) => {
-      setNewMessageUsers(newMessage);
-    });
-    return () => socket?.off("newMessage");
-  }, [socket, messages]);
-
-  // Fetch chat users
-  useEffect(() => {
-    const fetchChatUsers = async () => {
+    const fetchUsers = async () => {
       setLoading(true);
       try {
-        const response = await axios.get(`/api/user/currentchatters`);
-        setChatUser(response.data);
+        const response = await axios.get(`/api/user/all`);
+        setAllUsers(response.data);
       } catch (error) {
-        console.error("Error fetching chat users:", error);
+        console.error("Error fetching users:", error);
       } finally {
         setLoading(false);
       }
     };
-    fetchChatUsers();
+    fetchUsers();
   }, []);
 
-  // Search users
-  const handleSearchSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+  // Search users dynamically
+  const handleSearchChange = async (e) => {
+    const query = e.target.value;
+    setSearchInput(query);
+
+    if (!query) {
+      const response = await axios.get(`/api/user/all`);
+      setAllUsers(response.data);
+      return;
+    }
+
     try {
-      const response = await axios.get(`/api/user/search?search=${searchInput}`);
-      setSearchUser(response.data.length > 0 ? response.data : []);
-      if (response.data.length === 0) toast.info("User Not Found");
+      const response = await axios.get(`/api/user/search?search=${query}`);
+      setAllUsers(response.data);
     } catch (error) {
       console.error("Search error:", error);
-    } finally {
-      setLoading(false);
     }
   };
 
-  // Select a user to chat
+  // Select user for chat
   const handleUserClick = (user) => {
     onSelectUser(user);
     setSelectedConversation(user);
     setSelectedUserId(user._id);
-    setNewMessageUsers("");
-    setIsSidebarOpen(false); // Hide sidebar on mobile
-  };
-
-  // Clear search results
-  const handleSearchBack = () => {
-    setSearchUser([]);
     setSearchInput("");
+    setIsSidebarOpen(false);
   };
 
   // Logout function
@@ -114,61 +101,66 @@ const Sidebar = ({ onSelectUser }) => {
       >
         {/* Search Bar */}
         <div className="p-4 flex items-center gap-2 bg-gray-500">
-          <form onSubmit={handleSearchSubmit} className="flex items-center bg-white rounded-full w-full sm:w-auto px-3 py-1">
-            <FaSearch className="text-gray-500" />
+          <div className="relative w-full">
             <input
               value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
+              onChange={handleSearchChange}
               type="text"
-              className="px-4 w-full sm:w-auto bg-transparent outline-none rounded-full text-black"
-              placeholder="Search user"
+              className="w-full px-4 py-2 rounded-full bg-white text-black outline-none"
+              placeholder="Search users..."
             />
-          </form>
+            <FaSearch className="absolute right-3 top-3 text-gray-500" />
+          </div>
         </div>
 
-        {/* Chat List */}
+        {/* Users List */}
         <div className="flex-grow overflow-y-auto h-[calc(100vh-150px)] p-2">
-          {chatUser.length === 0 ? (
-            <div className="font-bold flex flex-col items-center text-xl text-yellow-500">
-              <h1>Why are you Alone? 🤔</h1>
-              <h1>Search username to chat</h1>
-            </div>
-          ) : (
-            chatUser.map((user) => (
+          {loading ? (
+            <p className="text-center text-gray-600">Loading users...</p>
+          ) : allUsers.length > 0 ? (
+            allUsers.map((user) => (
               <div key={user._id} onClick={() => handleUserClick(user)}
-                   className={`flex gap-3 items-center rounded p-2 py-1 cursor-pointer hover:bg-gray-300 
+                   className={`flex gap-3 items-center rounded p-2 cursor-pointer hover:bg-gray-300 
                    ${selectedUserId === user?._id ? "bg-sky-500 text-white" : ""}`}>
-                <div className={`avatar ${onlineUser.includes(user._id) ? "online" : ""}`}>
-                  <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200">
-                    {user.profilepic ? (
-                      <img src={user.profilepic} alt="User Avatar" className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="flex items-center justify-center w-full h-full text-gray-600 text-sm">
-                        No Image
-                      </span>
-                    )}
-                  </div>
+                <div className="relative w-12 h-12 rounded-full overflow-hidden bg-gray-200">
+                  <img
+                    src={user.profilepic || "/default-avatar.png"}
+                    alt="User Avatar"
+                    className="w-full h-full object-cover"
+                  />
+                  {onlineUser.includes(user._id) && (
+                    <span className="absolute bottom-1 right-1 bg-green-500 w-3 h-3 rounded-full"></span>
+                  )}
                 </div>
-                <div className="flex flex-col flex-1">
+                <div className="flex flex-col">
                   <p className="font-bold">{user.username}</p>
                 </div>
               </div>
             ))
+          ) : (
+            <div className="text-center text-yellow-500 font-bold">
+              No users found.
+            </div>
           )}
         </div>
 
         {/* Logout Button */}
         <div className="p-4 flex items-center justify-between bg-gray-500">
-          <img
-            src={authUser?.profilepic}
-            className="h-10 w-10 sm:h-12 sm:w-12 rounded-full cursor-pointer hover:scale-110"
-            alt="Profile"
-          />
-          <button onClick={handleLogout} className="hover:bg-red-600 w-10 sm:w-auto px-3 py-2 flex items-center gap-2 rounded-lg transition-all">
-            <BiLogOut size={25} />
-            <span className="hidden sm:inline">Logout</span>
-          </button>
-        </div>
+  <div className="flex items-center gap-3">
+    <img
+      src={authUser?.profilepic || "/default-avatar.png"}
+      className="h-10 w-10 sm:h-12 sm:w-12 rounded-full cursor-pointer hover:scale-110"
+      alt="Profile"
+    />
+    <span className="text-white font-medium hidden sm:block">{authUser?.username || "User"}</span>
+  </div>
+  
+  <button onClick={handleLogout} className="hover:bg-red-600 px-3 py-2 flex items-center gap-2 rounded-lg transition-all">
+    <BiLogOut size={25} />
+    <span className="hidden sm:inline">Logout</span>
+  </button>
+</div>
+
       </div>
     </div>
   );
