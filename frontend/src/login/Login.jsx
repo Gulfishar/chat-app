@@ -44,7 +44,7 @@ const Login = () => {
                 <h1 className="text-3xl font-bold text-center text-blue-900">WHISPR</h1>
                 <h2 className="text-2xl font-semibold text-center text-gray-800 mt-2">Login</h2>
 
-                <form onSubmit={handleSubmit} className="flex flex-col text-white mt-4">
+                <form onSubmit={handleSubmit} className="flex flex-col text-black mt-4">
                     <div>
                         <label className="font-semibold text-gray-700 text-lg">Email:</label>
                         <input

@@ -137,7 +137,7 @@ const MessageContainer = ({ onBackUser }) => {
                 onChange={handleMessages}
                 required
                 type="text"
-                className="flex-1 bg-transparent outline-none px-2 text-sm sm:text-base"
+                className="flex-1 bg-transparent outline-none px-2 text-sm sm:text-base text-black"
                 placeholder="Type a message..."
               />
               <button type="submit">
